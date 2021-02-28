@@ -1,5 +1,3 @@
-#!/Users/Moris/Desktop/Saturno/.env/bin/python3
-
 from argparse import ArgumentParser
 from os import mkdir, path, walk
 from re import search

@@ -1,9 +1,9 @@
 from json import dump, load
 from os import path
 
-from anime import search_anime
 from colorifix.colorifix import Background, Color, Style, erase, paint
-from getchar import _Getch
+from saturno.anime import search_anime
+from saturno.getchar import _Getch
 
 # --- Config file
 

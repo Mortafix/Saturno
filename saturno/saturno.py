@@ -4,12 +4,12 @@ from argparse import ArgumentParser
 from os import mkdir, path, walk
 from re import search
 
-from anime import get_download_link, get_episodes_link
 from colorifix.colorifix import Color, Style, paint
 from halo import Halo
-from manage import get_config, manage
 from pymortafix.utils import multisub
 from requests import get
+from saturno.anime import get_download_link, get_episodes_link
+from saturno.manage import get_config, manage
 
 CONFIG = get_config()
 SPINNER = Halo()

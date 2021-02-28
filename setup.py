@@ -25,6 +25,6 @@ setuptools.setup(
     ],
     python_requires=">=3.8",
     keywords=["anime", "saturn", "download"],
-    package_data={"pysaber": ["config.json"]},
+    package_data={"saturno": ["anime.py", "getchar.py", "manage.py", "config.json"]},
     entry_points={"console_scripts": ["saturno=saturno.saturno:main"]},
 )

@@ -3,11 +3,9 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-requirements = open("requirements.txt").read().split()
-
 setuptools.setup(
     name="saturno",
-    version="1.0.0",
+    version="1.0.2",
     author="Moris Doratiotto",
     author_email="moris.doratiotto@gmail.com",
     description="A python module to download anime from Anime Saturn",
@@ -15,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/mortafix/Saturno",
     packages=setuptools.find_packages(),
-    install_requires=requirements,
+    install_requires=["requests", "bs4", "halo", "pymortafix", "halo", "argparse"],
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "License :: OSI Approved :: MIT License",

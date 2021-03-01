@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from os import mkdir, path, walk
 from re import search
 from subprocess import PIPE, STDOUT, Popen
+from time import sleep
 
 from colorifix.colorifix import Color, Style, paint
 from halo import Halo
@@ -72,6 +73,7 @@ def download_m3u8(url, name, ep, folder):
             f"ep {paint(ep,Color.MAGENTA)} "
             f"[{paint(f'{int(size)/1024:.1f}',style=Style.BOLD)} MB]"
         )
+        sleep(2)
         if line == "" and popen.poll() is not None:
             break
     SPINNER.succeed(f"Downloaded {paint(name,Color.BLUE)} ep {paint(ep,Color.MAGENTA)}")

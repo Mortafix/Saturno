@@ -63,19 +63,24 @@ def download_m3u8(url, name, ep, folder):
         stdout=PIPE,
         stderr=STDOUT,
     )
-    size = 0
+    size, lines = 0, 0
     while True:
         next_line = popen.stdout.readline()
         line = next_line.rstrip().decode("utf8")
-        size = (m := search(r"size=\s*(\d+)[a-zA-Z]{2}", line)) and m.group(1) or size
-        SPINNER.start(
-            f"Downloading {paint(name,Color.BLUE)} "
-            f"ep {paint(ep,Color.MAGENTA)} "
-            f"[{paint(f'{int(size)/1024:.1f}',style=Style.BOLD)} MB]"
-        )
-        sleep(2)
         if line == "" and popen.poll() is not None:
             break
+        if lines % 7:
+            size = (
+                (m := search(r"size=\s*(\d+)[a-zA-Z]{2}", line)) and m.group(1) or size
+            )
+        else:
+            SPINNER.start(
+                f"Downloading {paint(name,Color.BLUE)} "
+                f"ep {paint(ep,Color.MAGENTA)} "
+                f"[{paint(f'{int(size)/1024:.1f}',style=Style.BOLD)} MB]"
+            )
+            sleep(1)
+        lines += 1
     SPINNER.succeed(f"Downloaded {paint(name,Color.BLUE)} ep {paint(ep,Color.MAGENTA)}")
     return filename
 

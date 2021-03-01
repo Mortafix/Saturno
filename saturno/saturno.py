@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from os import mkdir, path, walk
 from re import search
+from subprocess import PIPE, STDOUT, Popen
 
 from colorifix.colorifix import Color, Style, paint
 from halo import Halo
@@ -27,7 +28,7 @@ def sanitize_name(name):
     return multisub({":": "", " ": "_"}, name)
 
 
-def download_video(url, name, ep, folder):
+def download_mp4(url, name, ep, folder):
     basepath = path.join(CONFIG.get("path"), folder)
     if not path.exists(basepath):
         mkdir(basepath)
@@ -52,6 +53,32 @@ def download_video(url, name, ep, folder):
     return filename
 
 
+def download_m3u8(url, name, ep, folder):
+    basepath = path.join(CONFIG.get("path"), folder)
+    if not path.exists(basepath):
+        mkdir(basepath)
+    filename = path.join(basepath, f"{sanitize_name(name)}_Ep{ep}.mp4")
+    popen = Popen(
+        f"ffmpeg -y -i {url} '{filename}'",
+        shell=True,
+        stdout=PIPE,
+        stderr=STDOUT,
+    )
+    size = 0
+    while True:
+        next_line = popen.stdout.readline()
+        line = next_line.rstrip().decode("utf8")
+        size = (m := search(r"size=\s*(\d+)[a-zA-Z]{2}", line)) and m.group(1) or size
+        SPINNER.start(
+            f"Downloading {paint(name,Color.BLUE)} "
+            f"ep {paint(ep,Color.MAGENTA)} "
+            f"[{paint(f'{int(size)/1024:.1f}',style=Style.BOLD)} MB]"
+        )
+        if line == "" and popen.poll() is not None:
+            break
+    return filename
+
+
 def download():
     anime_list = [list(anime.values()) for anime in CONFIG.get("anime")]
     for name, url, folder, mode in anime_list:
@@ -64,7 +91,10 @@ def download():
             eps_to_download = [ep for ep in eps_available if ep > last_ep_downloaded]
         for ep in eps_to_download:
             download_link = get_download_link(links[ep - 1])
-            download_video(download_link, name, ep, folder)
+            if search("m3u8", download_link):
+                download_m3u8(download_link, name, ep, folder)
+            if search("mp4", download_link):
+                download_mp4(download_link, name, ep, folder)
 
 
 def argparsing():

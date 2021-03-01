@@ -47,9 +47,7 @@ def download_mp4(url, name, ep, folder):
                     f"[{paint(f'{downloaded/size*100:.1f}',style=Style.BOLD)}%]"
                 )
                 f.write(chunk)
-        SPINNER.succeed(
-            f"Downloaded {paint(name,Color.BLUE)} ep {paint(ep,Color.MAGENTA)}"
-        )
+    SPINNER.succeed(f"Downloaded {paint(name,Color.BLUE)} ep {paint(ep,Color.MAGENTA)}")
     return filename
 
 
@@ -76,6 +74,7 @@ def download_m3u8(url, name, ep, folder):
         )
         if line == "" and popen.poll() is not None:
             break
+    SPINNER.succeed(f"Downloaded {paint(name,Color.BLUE)} ep {paint(ep,Color.MAGENTA)}")
     return filename
 
 

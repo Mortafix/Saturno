@@ -130,7 +130,7 @@ def manage():
             p_k = inkey()
             while p_k not in ("b", "e"):
                 p_k = inkey()
-            erase(2)
+            erase(3)
             if p_k == "e":
                 new_path = input(paint("Path", style=Style.BOLD) + ": ")
                 while not path.exists(new_path):
@@ -141,7 +141,7 @@ def manage():
                         + ": "
                     )
                 add_new_path(new_path)
-                erase(2)
+                erase(1)
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))
             print(pprint_actions(mode="confirm"))

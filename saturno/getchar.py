@@ -1,10 +1,8 @@
 class _Getch:
     def __init__(self):
         try:
-            print("WIN")
             self.impl = _GetchWindows()
         except ImportError:
-            print("UNIX")
             self.impl = _GetchUnix()
 
     def __call__(self):

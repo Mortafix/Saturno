@@ -26,5 +26,5 @@ def get_download_link(episode_link):
     soup = bs(get(episode_link).text, "html.parser")
     ep_page = soup.find("div", {"class": "card-body"}).find("a").get("href")
     ep_soup = bs(get(ep_page).text, "html.parser")
-    link = search(r"\"(.*m3u8)", str(ep_soup))
-    return link.group(1) or (s := ep_soup.find("source")) and s.get("src")
+    link = search(r"\"(.*\.(m3u8|mp4))\"", str(ep_soup))
+    return ep_page, (link.group(1) or (s := ep_soup.find("source")) and s.get("src"))

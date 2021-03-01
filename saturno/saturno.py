@@ -52,6 +52,29 @@ def download_mp4(url, name, ep, folder):
     return filename
 
 
+def download_yt_dl(url, name, ep, folder):
+    basepath = path.join(CONFIG.get("path"), folder)
+    if not path.exists(basepath):
+        mkdir(basepath)
+    filename = path.join(basepath, f"{sanitize_name(name)}_Ep{ep}.mp4")
+    popen = Popen(
+        f"youtube-dl {url} -o '{filename}'",
+        shell=True,
+        stdout=PIPE,
+        stderr=STDOUT,
+    )
+    SPINNER.start(
+        f"Downloading {paint(name,Color.BLUE)} " f"ep {paint(ep,Color.MAGENTA)}"
+    )
+    while True:
+        next_line = popen.stdout.readline()
+        line = next_line.rstrip().decode("utf8")
+        if line == "" and popen.poll() is not None:
+            break
+    SPINNER.succeed(f"Downloaded {paint(name,Color.BLUE)} ep {paint(ep,Color.MAGENTA)}")
+    return filename
+
+
 def download_m3u8(url, name, ep, folder):
     basepath = path.join(CONFIG.get("path"), folder)
     if not path.exists(basepath):
@@ -96,11 +119,20 @@ def download():
             last_ep_downloaded = 0 if not downloaded_eps else max(downloaded_eps)
             eps_to_download = [ep for ep in eps_available if ep > last_ep_downloaded]
         for ep in eps_to_download:
-            download_link = get_download_link(links[ep - 1])
-            if search("m3u8", download_link):
-                download_m3u8(download_link, name, ep, folder)
-            if search("mp4", download_link):
-                download_mp4(download_link, name, ep, folder)
+            episode_link, download_link = get_download_link(links[ep - 1])
+            try:
+                if search("m3u8", download_link):
+                    download_m3u8(download_link, name, ep, folder)
+                if search("mp4", download_link):
+                    download_mp4(download_link, name, ep, folder)
+            except Exception:
+                try:
+                    download_yt_dl(episode_link, name, ep, folder)
+                except Exception:
+                    SPINNER.fail(
+                        f"Fail to download {paint(name,Color.BLUE)} "
+                        f"ep {paint(ep,Color.MAGENTA)}"
+                    )
 
 
 def argparsing():

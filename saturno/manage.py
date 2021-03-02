@@ -1,5 +1,7 @@
+from datetime import datetime
 from json import dump, load
-from os import path
+from os import path, walk
+from re import search
 
 from colorifix.colorifix import Background, Color, Style, erase, paint
 from pymortafix.utils import strict_input
@@ -80,10 +82,18 @@ def pprint_actions(mode=None):
         actions = {"ws": "move", "c": "confirm", "b": "back"}
     elif mode == "back":
         actions = {"b": "back"}
+    elif mode == "settings":
+        actions = {"u": "backup", "r": "restore", "p": "path", "b": "back"}
     elif mode == "path":
         actions = {"e": "edit", "b": "back"}
     else:
-        actions = {"ws": "move", "a": "add", "r": "remove", "p": "path", "q": "quit"}
+        actions = {
+            "ws": "move",
+            "a": "add",
+            "r": "remove",
+            "e": "settings",
+            "q": "quit",
+        }
     return (
         "-" * sum(len(action) + 5 for action in actions.values())
         + "\n"
@@ -99,6 +109,21 @@ def pprint_query(query_list, selected):
         paint(f"[>] {name}", Color.GREEN) if selected == i else f"[ ] {name}"
         for i, (name, _) in enumerate(query_list)
     )
+
+
+def pprint_settings():
+    path = f"Current path: {paint(get_config().get('path'),Color.BLUE)}"
+    backup = get_last_backup()
+    backup_str = f"Backup: {paint(backup,Color.BLUE)}"
+    return f"{path}\n{backup_str}"
+
+
+def get_last_backup():
+    _, _, files = list(walk("."))[0]
+    backups = sorted(
+        [file for file in files if search(r"saturno-backup\.json$", file)], reverse=True
+    )
+    return backups[0] if backups else ""
 
 
 def recap_new_anime(name, url, season, folder, mode):
@@ -132,7 +157,7 @@ def manage():
         anime_list = [list(anime.values()) for anime in get_config().get("anime")]
         print(pprint_anime(anime_list, index))
         print(pprint_actions())
-        k = get_input(choices=("w", "s", "p", "a", "r", "q"))
+        k = get_input(choices=("w", "s", "e", "a", "r", "q"))
         erase(len(anime_list or [0]) + 2)
 
         if k in ("w", "s"):
@@ -141,21 +166,37 @@ def manage():
             if k == "s" and index < len(anime_list) - 1:
                 index += 1
 
-        if k == "p":
-            print(f"Current path: {paint(get_config().get('path'),Color.BLUE)}")
-            print(pprint_actions(mode="path"))
-            p_k = get_input(choices=("b", "e"))
-            erase(3)
-            if p_k == "e":
-                new_path = strict_input(
-                    paint("Path", style=Style.BOLD) + ": ",
-                    wrong_text=paint("Wrong path! ", Color.RED)
-                    + paint("Path", style=Style.BOLD)
-                    + ": ",
-                    check=path.exists,
-                    flush=True,
-                )
-                add_new_path(new_path)
+        if k == "e":
+            e_k = "start"
+            while e_k != "b":
+                print(pprint_settings())
+                print(pprint_actions(mode="settings"))
+                e_k = get_input(choices=("u", "r", "p", "b"))
+                erase(4)
+                if e_k == "p":
+                    new_path = strict_input(
+                        paint("Path", style=Style.BOLD) + ": ",
+                        wrong_text=paint("Wrong path! ", Color.RED)
+                        + paint("Path", style=Style.BOLD)
+                        + ": ",
+                        check=path.exists,
+                        flush=True,
+                    )
+                    add_new_path(new_path)
+                    e_k = ""
+                elif e_k == "r":
+                    backup_filename = get_last_backup()
+                    if backup_filename:
+                        backup_dict = load(open(backup_filename))
+                        save_config(backup_dict)
+                elif e_k == "u":
+                    now = datetime.now()
+                    config = get_config()
+                    dump(
+                        config,
+                        open(f"{now:%Y-%m-%d}_saturno-backup.json", "w"),
+                        indent=4,
+                    )
 
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))

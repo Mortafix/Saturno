@@ -46,7 +46,7 @@ def is_folder_unique(folder_name):
     return folder_name not in folders
 
 
-# --- Menu
+# --- Pretty Print
 
 
 def pprint_row(anime_name, mode, index=False, remove=False):
@@ -109,15 +109,28 @@ def recap_new_anime(name, url, folder, mode):
     )
 
 
-def manage():
+# --- Input
+
+
+def get_input(choices=None):
     inkey = _Getch()
+    k = inkey()
+    while choices and k not in choices:
+        k = inkey()
+    return k
+
+
+# --- Manage
+
+
+def manage():
     index = 0
     k = "start"
     while k != "q":
         anime_list = [list(anime.values()) for anime in get_config().get("anime")]
         print(pprint_anime(anime_list, index))
         print(pprint_actions())
-        k = inkey()
+        k = get_input(choices=("w", "s", "p", "a", "r", "q"))
         erase(len(anime_list or [0]) + 2)
         if k in ("w", "s"):
             if k == "w" and index:
@@ -127,9 +140,7 @@ def manage():
         if k == "p":
             print(f"Current path: {paint(get_config().get('path'),Color.BLUE)}")
             print(pprint_actions(mode="path"))
-            p_k = inkey()
-            while p_k not in ("b", "e"):
-                p_k = inkey()
+            p_k = get_input(choices=("b", "e"))
             erase(3)
             if p_k == "e":
                 new_path = input(paint("Path", style=Style.BOLD) + ": ")
@@ -145,9 +156,8 @@ def manage():
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))
             print(pprint_actions(mode="confirm"))
-            while k not in ("y", "n"):
-                k = inkey()
-            if k == "y":
+            r_k = get_input(choices=("y", "n"))
+            if r_k == "y":
                 remove_anime(index)
                 index = 0
             erase(len(anime_list) + 2)
@@ -161,14 +171,12 @@ def manage():
             if not query_list:
                 print(f"No anime found with {paint(query,Color.BLUE)}!")
                 print(pprint_actions(mode="back"))
-                q_k = inkey()
-                while q_k != "b":
-                    q_k = inkey()
+                q_k = get_input(choices=("b",))
                 erase(3)
             while q_k not in ("c", "b"):
                 print(pprint_query(query_list, q_index))
                 print(pprint_actions(mode="add"))
-                q_k = inkey()
+                q_k = get_input()
                 erase(len(query_list) + 2)
                 if q_k in ("w", "s"):
                     if q_k == "w" and q_index:
@@ -200,9 +208,7 @@ def manage():
                 # confirm
                 print(recap_new_anime(*query_list[q_index], name, mode))
                 print(pprint_actions(mode="confirm"))
-                c_k = "start"
-                while c_k not in ("y", "n"):
-                    c_k = inkey()
+                c_k = get_input(choices=("y", "n"))
                 if c_k == "y":
                     add_anime(*query_list[q_index], name, mode)
                 erase(6)

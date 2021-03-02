@@ -15,8 +15,8 @@ CONFIG = get_config()
 SPINNER = Halo()
 
 
-def last_episodes_downloaded(folder_name):
-    tree = list(walk(path.join(CONFIG.get("path"), folder_name)))
+def last_episodes_downloaded(folder_name, season):
+    tree = list(walk(path.join(CONFIG.get("path"), folder_name, f"Stagione {season}")))
     if not tree:
         return []
     _, _, files = tree[0]
@@ -75,7 +75,7 @@ def download_m3u8(url, name, filename):
 def download():
     anime_list = [list(anime.values()) for anime in CONFIG.get("anime")]
     for name, url, season, folder, mode in anime_list:
-        downloaded_eps = last_episodes_downloaded(folder)
+        downloaded_eps = last_episodes_downloaded(folder, season)
         links, eps_available = get_episodes_link(url)
         if mode == "full":
             eps_to_download = [ep for ep in eps_available if ep not in downloaded_eps]

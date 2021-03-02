@@ -2,6 +2,7 @@ from json import dump, load
 from os import path
 
 from colorifix.colorifix import Background, Color, Style, erase, paint
+from pymortafix.utils import strict_input
 from saturno.anime import search_anime
 from saturno.getchar import _Getch
 
@@ -28,8 +29,8 @@ def remove_anime(index):
     save_config(config)
 
 
-def add_anime(name, link, folder, mode):
-    new = {"name": name, "site": link, "folder": folder, "mode": mode}
+def add_anime(name, link, season, folder, mode):
+    new = {"name": name, "site": link, "season": season, "folder": folder, "mode": mode}
     config = get_config()
     config["anime"] += [new]
     save_config(config)
@@ -49,16 +50,16 @@ def is_folder_unique(folder_name):
 # --- Pretty Print
 
 
-def pprint_row(anime_name, mode, index=False, remove=False):
+def pprint_row(anime_name, season, mode, index=False, remove=False):
     if index and remove:
         return paint(f"[#] {anime_name} [{mode}]", background=Background.RED)
     if index and not remove:
-        return (
-            paint("[>] ", Color.GREEN)
-            + paint(anime_name, Color.GREEN)
-            + paint(f" [{mode}]", Color.BLUE)
-        )
-    return "[ ] " + paint(anime_name) + paint(f" [{mode}]", Color.BLUE)
+        ret_str = paint("[>] ", Color.GREEN) + paint(anime_name, Color.GREEN)
+    else:
+        ret_str = "[ ] " + paint(anime_name)
+    return (
+        ret_str + paint(f" (s{season}) ", Color.CYAN) + paint(f"[{mode}]", Color.BLUE)
+    )
 
 
 def pprint_anime(anime_list, index, remove=None):
@@ -66,8 +67,8 @@ def pprint_anime(anime_list, index, remove=None):
         return "No anime added.."
     return "\n".join(
         [
-            pprint_row(name, mode, index == i, remove=remove)
-            for i, (name, _, _, mode) in enumerate(anime_list)
+            pprint_row(name, season, mode, index == i, remove=remove)
+            for i, (name, _, season, _, mode) in enumerate(anime_list)
         ]
     )
 
@@ -100,10 +101,11 @@ def pprint_query(query_list, selected):
     )
 
 
-def recap_new_anime(name, url, folder, mode):
+def recap_new_anime(name, url, season, folder, mode):
     return (
         f"Name: {paint(name,Color.BLUE)}\n"
         f"Link: {paint(url,Color.BLUE)}\n"
+        f"Stagione {paint(season,Color.BLUE)}\n"
         f"Folder: {paint(folder,Color.BLUE)}\n"
         f"Mode: {paint(mode,Color.BLUE)}"
     )
@@ -132,27 +134,29 @@ def manage():
         print(pprint_actions())
         k = get_input(choices=("w", "s", "p", "a", "r", "q"))
         erase(len(anime_list or [0]) + 2)
+
         if k in ("w", "s"):
             if k == "w" and index:
                 index -= 1
             if k == "s" and index < len(anime_list) - 1:
                 index += 1
+
         if k == "p":
             print(f"Current path: {paint(get_config().get('path'),Color.BLUE)}")
             print(pprint_actions(mode="path"))
             p_k = get_input(choices=("b", "e"))
             erase(3)
             if p_k == "e":
-                new_path = input(paint("Path", style=Style.BOLD) + ": ")
-                while not path.exists(new_path):
-                    erase()
-                    new_path = input(
-                        paint("Wrong path! ", Color.RED)
-                        + paint("Path", style=Style.BOLD)
-                        + ": "
-                    )
+                new_path = strict_input(
+                    paint("Path", style=Style.BOLD) + ": ",
+                    wrong_text=paint("Wrong path! ", Color.RED)
+                    + paint("Path", style=Style.BOLD)
+                    + ": ",
+                    check=path.exists,
+                    flush=True,
+                )
                 add_new_path(new_path)
-                erase(1)
+
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))
             print(pprint_actions(mode="confirm"))
@@ -161,6 +165,7 @@ def manage():
                 remove_anime(index)
                 index = 0
             erase(len(anime_list) + 2)
+
         if k == "a":
             q_index = 0
             q_k = "start"
@@ -185,31 +190,31 @@ def manage():
                         q_index += 1
             # new anime
             if q_k == "c":
-                # name
-                name = input(paint("Folder name", style=Style.BOLD) + ": ")
-                while not name or not is_folder_unique(name):
-                    erase()
-                    name = input(
-                        paint("Folder name must be unique! ", Color.RED)
-                        + paint("Folder name", style=Style.BOLD)
-                        + ": "
-                    )
-                erase()
-                # mode
-                mode = input(paint("Mode [full|new]", style=Style.BOLD) + ": ")
-                while mode not in ("full", "new"):
-                    erase()
-                    mode = input(
-                        paint("Mode must be full or new! ", Color.RED)
-                        + paint("Mode [full|new]", style=Style.BOLD)
-                        + ": "
-                    )
-                erase()
-                # confirm
-                print(recap_new_anime(*query_list[q_index], name, mode))
+                base = paint("Season", style=Style.BOLD) + ": "
+                season = strict_input(
+                    base,
+                    f"{paint('This is not a season!',Color.RED)} {base}",
+                    regex=r"\d{1,2}$",
+                    flush=True,
+                )
+                base = paint("Folder name", style=Style.BOLD) + ": "
+                name = strict_input(
+                    base,
+                    f"{paint('Folder name must be unique!', Color.RED)} {base}",
+                    check=is_folder_unique,
+                    flush=True,
+                )
+                base = paint("Mode [full|new]", style=Style.BOLD) + ": "
+                mode = strict_input(
+                    base,
+                    f"{paint('Mode must be full or new!', Color.RED)} {base}",
+                    choices=("full", "new"),
+                    flush=True,
+                )
+                print(recap_new_anime(*query_list[q_index], season, name, mode))
                 print(pprint_actions(mode="confirm"))
                 c_k = get_input(choices=("y", "n"))
                 if c_k == "y":
-                    add_anime(*query_list[q_index], name, mode)
-                erase(6)
+                    add_anime(*query_list[q_index], season, name, mode)
+                erase(7)
                 index = 0

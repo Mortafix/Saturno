@@ -7,6 +7,8 @@ from colorifix.colorifix import Background, Color, Style, erase, paint
 from pymortafix.utils import strict_input
 from saturno.anime import search_anime
 from saturno.getchar import _Getch
+from telegram import Bot
+from telegram.error import InvalidToken
 
 # --- Config file
 
@@ -49,6 +51,13 @@ def is_folder_unique(folder_name):
     return folder_name not in folders
 
 
+def add_telegram_config(bot_token, chat_id):
+    config = get_config()
+    config["telegram-bot-token"] = bot_token
+    config["telegram-chat-id"] = chat_id
+    save_config(config)
+
+
 # --- Pretty Print
 
 
@@ -83,7 +92,13 @@ def pprint_actions(mode=None):
     elif mode == "back":
         actions = {"b": "back"}
     elif mode == "settings":
-        actions = {"u": "backup", "r": "restore", "p": "path", "b": "back"}
+        actions = {
+            "u": "backup",
+            "r": "restore",
+            "p": "path",
+            "t": "telegram",
+            "b": "back",
+        }
     elif mode == "path":
         actions = {"e": "edit", "b": "back"}
     else:
@@ -112,10 +127,24 @@ def pprint_query(query_list, selected):
 
 
 def pprint_settings():
-    path = f"Current path: {paint(get_config().get('path'),Color.BLUE)}"
+    config = get_config()
+    labels = ("Current path", "Backup", "Telegram")
+    path_str = paint(config.get("path"), Color.BLUE)
     backup = get_last_backup()
-    backup_str = f"Backup: {paint(backup,Color.BLUE)}"
-    return f"{path}\n{backup_str}"
+    backup_str = paint(backup, Color.BLUE)
+    telegram_str = (
+        (
+            paint(config.get("telegram-bot-token"), Color.BLUE)
+            + paint(":", style=Style.BOLD)
+            + paint(config.get("telegram-chat-id"), Color.BLUE)
+        )
+        if config.get("telegram-bot-token")
+        else ""
+    )
+    values = (path_str, backup_str, telegram_str)
+    return "\n".join(
+        f"{paint(lab,style=Style.BOLD)}: {val}" for lab, val in zip(labels, values)
+    )
 
 
 def get_last_backup():
@@ -147,6 +176,14 @@ def get_input(choices=None):
     return k
 
 
+def is_bot_valid(token):
+    try:
+        Bot(token)
+        return True
+    except InvalidToken:
+        return False
+
+
 # --- Manage
 
 
@@ -171,14 +208,13 @@ def manage():
             while e_k != "b":
                 print(pprint_settings())
                 print(pprint_actions(mode="settings"))
-                e_k = get_input(choices=("u", "r", "p", "b"))
-                erase(4)
+                e_k = get_input(choices=("u", "r", "p", "t", "b"))
+                erase(5)
                 if e_k == "p":
+                    base = paint("Path", style=Style.BOLD) + ": "
                     new_path = strict_input(
-                        paint("Path", style=Style.BOLD) + ": ",
-                        wrong_text=paint("Wrong path! ", Color.RED)
-                        + paint("Path", style=Style.BOLD)
-                        + ": ",
+                        base,
+                        wrong_text=paint("Wrong path! ", Color.RED) + base,
                         check=path.exists,
                         flush=True,
                     )
@@ -197,6 +233,22 @@ def manage():
                         open(f"{now:%Y-%m-%d}_saturno-backup.json", "w"),
                         indent=4,
                     )
+                elif e_k == "t":
+                    base = paint("Telegram bot token", style=Style.BOLD) + ": "
+                    telegram_bot_token = strict_input(
+                        base,
+                        wrong_text=paint("Invalid token! ", Color.RED) + base,
+                        check=is_bot_valid,
+                        flush=True,
+                    )
+                    base = paint("Telegram chat ID", style=Style.BOLD) + ": "
+                    telegram_chat_id = strict_input(
+                        base,
+                        wrong_text=paint("Invalid chat ID! ", Color.RED) + base,
+                        regex=r"\-?\d+$",
+                        flush=True,
+                    )
+                    add_telegram_config(telegram_bot_token, telegram_chat_id)
 
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))

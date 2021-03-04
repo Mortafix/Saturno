@@ -1,15 +1,18 @@
 from argparse import ArgumentParser
+from datetime import datetime
 from os import makedirs, path, walk
 from re import search
 from subprocess import PIPE, STDOUT, Popen
 from time import sleep
 
 from colorifix.colorifix import Color, paint
+from emoji import emojize
 from halo import Halo
 from pymortafix.utils import multisub
 from requests import get
 from saturno.anime import get_download_link, get_episodes_link
 from saturno.manage import get_config, manage
+from telegram import Bot
 
 CONFIG = get_config()
 SPINNER = Halo()
@@ -27,6 +30,24 @@ def last_episodes_downloaded(folder_name, season):
 
 def sanitize_name(name):
     return multisub({":": "", " ": "_"}, name)
+
+
+def send_telegram_log(name, season, episode, success=True):
+    config = get_config()
+    bot_token = config.get("telegram-bot-token")
+    chat_id = config.get("telegram-chat-id")
+    if bot_token and chat_id:
+        emoji = ":white_check_mark:" if success else ":no_entry:"
+        title = "Download Succesfull" if success else "Download Failed"
+        msg = (
+            f"{emoji} *{title}* {emoji}\n\n"
+            f":clapper: *{name}*\n"
+            f":cyclone: Episode *{season}*×*{episode}*\n"
+            f":calendar: {datetime.now():%d.%m.%Y}\n"
+        )
+        Bot(bot_token).send_message(
+            chat_id, emojize(msg, use_aliases=True), parse_mode="Markdown"
+        )
 
 
 def download_mp4(url, name, filename):
@@ -107,10 +128,12 @@ def download():
                         f"Fail to download {paint(name,Color.BLUE)} "
                         f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
                     )
+                    send_telegram_log(name, season, ep, success=False)
             SPINNER.succeed(
                 f"Downloaded {paint(name,Color.BLUE)} "
                 f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
             )
+            send_telegram_log(name, season, ep)
 
 
 def argparsing():

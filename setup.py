@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="saturno",
-    version="1.3.1",
+    version="1.4.0",
     author="Moris Doratiotto",
     author_email="moris.doratiotto@gmail.com",
     description="A python module to download anime from Anime Saturn",
@@ -13,7 +13,15 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/mortafix/Saturno",
     packages=setuptools.find_packages(),
-    install_requires=["requests", "bs4", "halo", "pymortafix", "halo", "argparse"],
+    install_requires=[
+        "requests",
+        "bs4",
+        "halo",
+        "pymortafix",
+        "halo",
+        "argparse",
+        "python-telegram-bot",
+    ],
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "License :: OSI Approved :: MIT License",

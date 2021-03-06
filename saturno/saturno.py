@@ -52,7 +52,7 @@ def send_telegram_log(name, season, episode, success=True):
 
 def download_video(url, name, filename):
     popen = Popen(
-        f"youtube-dl {url} -o '{filename}'",
+        f"{CONFIG.get('youtube-dl-path')} {url} -o '{filename}'",
         shell=True,
         stdout=PIPE,
         stderr=STDOUT,

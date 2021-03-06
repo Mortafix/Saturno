@@ -57,6 +57,12 @@ def add_telegram_config(bot_token, chat_id):
     save_config(config)
 
 
+def add_youtube_dl(ytd_path):
+    config = get_config()
+    config["youtube-dl-path"] = ytd_path
+    save_config(config)
+
+
 # --- Pretty Print
 
 
@@ -96,6 +102,7 @@ def pprint_actions(mode=None):
             "r": "restore",
             "p": "path",
             "t": "telegram",
+            "y": "youtube-dl",
             "b": "back",
         }
     elif mode == "path":
@@ -127,7 +134,7 @@ def pprint_query(query_list, selected):
 
 def pprint_settings():
     config = get_config()
-    labels = ("Current path", "Backup", "Telegram")
+    labels = ("Current path", "Backup", "Telegram", "Youtube-dl")
     path_str = paint(config.get("path"), Color.BLUE)
     backup = get_last_backup()
     backup_str = paint(backup, Color.BLUE)
@@ -140,7 +147,8 @@ def pprint_settings():
         if config.get("telegram-bot-token")
         else ""
     )
-    values = (path_str, backup_str, telegram_str)
+    youtube_dl_str = paint(config.get("youtube-dl-path"), Color.BLUE)
+    values = (path_str, backup_str, telegram_str, youtube_dl_str)
     return "\n".join(
         f"{paint(lab,style=Style.BOLD)}: {val}" for lab, val in zip(labels, values)
     )
@@ -175,6 +183,10 @@ def is_bot_valid(token):
         return False
 
 
+def is_yt_download_valid(ytd_path):
+    return search(r"youtube-dl$", ytd_path) and path.exists(ytd_path)
+
+
 # --- Manage
 
 
@@ -199,8 +211,8 @@ def manage():
             while e_k != "b":
                 print(pprint_settings())
                 print(pprint_actions(mode="settings"))
-                e_k = direct_input(choices=("u", "r", "p", "t", "b"))
-                erase(5)
+                e_k = direct_input(choices=("u", "r", "p", "t", "y", "b"))
+                erase(6)
                 if e_k == "p":
                     base = paint("Path", style=Style.BOLD) + ": "
                     new_path = strict_input(
@@ -240,6 +252,18 @@ def manage():
                         flush=True,
                     )
                     add_telegram_config(telegram_bot_token, telegram_chat_id)
+                elif e_k == "y":
+                    base = paint("Youtube-dl path", style=Style.BOLD) + ": "
+                    youtube_dl_path = strict_input(
+                        base,
+                        wrong_text=paint(
+                            "Wrong path, MUST include 'youtube-dl'! ", Color.RED
+                        )
+                        + base,
+                        check=is_yt_download_valid,
+                        flush=True,
+                    )
+                    add_youtube_dl(youtube_dl_path)
 
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))

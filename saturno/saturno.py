@@ -50,19 +50,7 @@ def send_telegram_log(name, season, episode, success=True):
         )
 
 
-def download_mp4(url, name, filename):
-    chunk_size = 8192
-    with get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(filename, "wb") as f:
-            downloaded = 0
-            for chunk in r.iter_content(chunk_size=chunk_size):
-                downloaded += chunk_size
-                f.write(chunk)
-    return filename
-
-
-def download_yt_dl(url, name, filename):
+def download_video(url, name, filename):
     popen = Popen(
         f"youtube-dl {url} -o '{filename}'",
         shell=True,
@@ -74,22 +62,6 @@ def download_yt_dl(url, name, filename):
         line = next_line.rstrip().decode("utf8")
         if line == "" and popen.poll() is not None:
             break
-    return filename
-
-
-def download_m3u8(url, name, filename):
-    popen = Popen(
-        f"ffmpeg -y -i {url} '{filename}'",
-        shell=True,
-        stdout=PIPE,
-        stderr=STDOUT,
-    )
-    while True:
-        next_line = popen.stdout.readline()
-        line = next_line.rstrip().decode("utf8")
-        if line == "" and popen.poll() is not None:
-            break
-            sleep(2)
     return filename
 
 
@@ -117,19 +89,14 @@ def download(action):
                     f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
                 )
                 try:
-                    if search("m3u8", download_link):
-                        download_m3u8(download_link, name, filename)
-                    if search("mp4", download_link):
-                        download_mp4(download_link, name, filename)
+                    download_video(episode_link, name, filename)
                 except Exception:
-                    try:
-                        download_yt_dl(episode_link, name, filename)
-                    except Exception:
-                        SPINNER.fail(
-                            f"Fail to download {paint(name,Color.BLUE)} "
-                            f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
-                        )
-                        send_telegram_log(name, season, ep, success=False)
+                    SPINNER.fail(
+                        f"Fail to download {paint(name,Color.BLUE)} "
+                        f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
+                    )
+                    send_telegram_log(name, season, ep, success=False)
+                    break
                 SPINNER.succeed(
                     f"Downloaded {paint(name,Color.BLUE)} "
                     f"{paint(f'{season}x{ep}',Color.MAGENTA)}"

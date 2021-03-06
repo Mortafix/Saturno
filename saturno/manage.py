@@ -4,9 +4,8 @@ from os import path, walk
 from re import search
 
 from colorifix.colorifix import Background, Color, Style, erase, paint
-from pymortafix.utils import strict_input
+from pymortafix.utils import direct_input, strict_input
 from saturno.anime import search_anime
-from saturno.getchar import _Getch
 from telegram import Bot
 from telegram.error import InvalidToken
 
@@ -168,14 +167,6 @@ def recap_new_anime(name, url, season, folder, mode):
 # --- Input
 
 
-def get_input(choices=None):
-    inkey = _Getch()
-    k = inkey()
-    while choices and k not in choices:
-        k = inkey()
-    return k
-
-
 def is_bot_valid(token):
     try:
         Bot(token)
@@ -194,7 +185,7 @@ def manage():
         anime_list = [list(anime.values()) for anime in get_config().get("anime")]
         print(pprint_anime(anime_list, index))
         print(pprint_actions())
-        k = get_input(choices=("w", "s", "e", "a", "r", "q"))
+        k = direct_input(choices=("w", "s", "e", "a", "r", "q"))
         erase(len(anime_list or [0]) + 2)
 
         if k in ("w", "s"):
@@ -208,7 +199,7 @@ def manage():
             while e_k != "b":
                 print(pprint_settings())
                 print(pprint_actions(mode="settings"))
-                e_k = get_input(choices=("u", "r", "p", "t", "b"))
+                e_k = direct_input(choices=("u", "r", "p", "t", "b"))
                 erase(5)
                 if e_k == "p":
                     base = paint("Path", style=Style.BOLD) + ": "
@@ -253,7 +244,7 @@ def manage():
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))
             print(pprint_actions(mode="confirm"))
-            r_k = get_input(choices=("y", "n"))
+            r_k = direct_input(choices=("y", "n"))
             if r_k == "y":
                 remove_anime(index)
                 index = 0
@@ -269,12 +260,12 @@ def manage():
             if not query_list:
                 print(f"No anime found with {paint(query,Color.BLUE)}!")
                 print(pprint_actions(mode="back"))
-                q_k = get_input(choices=("b",))
+                q_k = direct_input(choices=("b",))
                 erase(3)
             while q_k not in ("c", "b"):
                 print(pprint_query(query_list, q_index))
                 print(pprint_actions(mode="add"))
-                q_k = get_input()
+                q_k = direct_input()
                 erase(len(query_list) + 2)
                 if q_k in ("w", "s"):
                     if q_k == "w" and q_index:
@@ -306,7 +297,7 @@ def manage():
                 )
                 print(recap_new_anime(*query_list[q_index], season, name, mode))
                 print(pprint_actions(mode="confirm"))
-                c_k = get_input(choices=("y", "n"))
+                c_k = direct_input(choices=("y", "n"))
                 if c_k == "y":
                     add_anime(*query_list[q_index], season, name, mode)
                 erase(7)

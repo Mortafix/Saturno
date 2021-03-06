@@ -93,7 +93,7 @@ def download_m3u8(url, name, filename):
     return filename
 
 
-def download():
+def download(action):
     anime_list = [list(anime.values()) for anime in CONFIG.get("anime")]
     for name, url, season, folder, mode in anime_list:
         downloaded_eps = last_episodes_downloaded(folder, season)
@@ -104,50 +104,56 @@ def download():
             last_ep_downloaded = 0 if not downloaded_eps else max(downloaded_eps)
             eps_to_download = [ep for ep in eps_available if ep > last_ep_downloaded]
         for ep in eps_to_download:
-            episode_link, download_link = get_download_link(links[ep - 1])
-            basepath = path.join(CONFIG.get("path"), folder, f"Stagione {season}")
-            if not path.exists(basepath):
-                makedirs(basepath)
-            filename = path.join(
-                basepath, f"{sanitize_name(name)}_s{int(season):02d}e{ep:02d}.mp4"
-            )
-            SPINNER.start(
-                f"Downloading {paint(name,Color.BLUE)} "
-                f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
-            )
-            try:
-                if search("m3u8", download_link):
-                    download_m3u8(download_link, name, filename)
-                if search("mp4", download_link):
-                    download_mp4(download_link, name, filename)
-            except Exception:
+            if action == "run":
+                episode_link, download_link = get_download_link(links[ep - 1])
+                basepath = path.join(CONFIG.get("path"), folder, f"Stagione {season}")
+                if not path.exists(basepath):
+                    makedirs(basepath)
+                filename = path.join(
+                    basepath, f"{sanitize_name(name)}_s{int(season):02d}e{ep:02d}.mp4"
+                )
+                SPINNER.start(
+                    f"Downloading {paint(name,Color.BLUE)} "
+                    f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
+                )
                 try:
-                    download_yt_dl(episode_link, name, filename)
+                    if search("m3u8", download_link):
+                        download_m3u8(download_link, name, filename)
+                    if search("mp4", download_link):
+                        download_mp4(download_link, name, filename)
                 except Exception:
-                    SPINNER.fail(
-                        f"Fail to download {paint(name,Color.BLUE)} "
-                        f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
-                    )
-                    send_telegram_log(name, season, ep, success=False)
-            SPINNER.succeed(
-                f"Downloaded {paint(name,Color.BLUE)} "
-                f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
-            )
-            send_telegram_log(name, season, ep)
+                    try:
+                        download_yt_dl(episode_link, name, filename)
+                    except Exception:
+                        SPINNER.fail(
+                            f"Fail to download {paint(name,Color.BLUE)} "
+                            f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
+                        )
+                        send_telegram_log(name, season, ep, success=False)
+                SPINNER.succeed(
+                    f"Downloaded {paint(name,Color.BLUE)} "
+                    f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
+                )
+                send_telegram_log(name, season, ep)
+            elif action == "test":
+                SPINNER.info(
+                    f"Found {paint(name, Color.BLUE)} "
+                    + paint(f"{season}x{ep}", Color.MAGENTA)
+                )
 
 
 def argparsing():
     parser = ArgumentParser(
         prog="Saturno",
         description="We are weebs.",
-        usage=("saturno action:{manage,run}"),
+        usage=("saturno action:{manage, run, test}"),
     )
     parser.add_argument(
         "action",
         type=str,
         nargs=1,
         help="action to do",
-        choices=("manage", "run"),
+        choices=("manage", "run", "test"),
     )
     return parser.parse_args()
 
@@ -156,8 +162,8 @@ def main():
     args = argparsing()
     if args.action[0] == "manage":
         manage()
-    if args.action[0] == "run":
-        download()
+    if args.action[0] in ("run", "test"):
+        download(args.action[0])
 
 
 if __name__ == "__main__":

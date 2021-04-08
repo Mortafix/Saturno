@@ -2,14 +2,11 @@ from argparse import ArgumentParser
 from datetime import datetime
 from os import makedirs, path, walk
 from re import search
-from subprocess import PIPE, STDOUT, Popen
-from time import sleep
 
 from colorifix.colorifix import Color, paint
 from emoji import emojize
 from halo import Halo
 from pymortafix.utils import multisub
-from requests import get
 from saturno.anime import get_download_link, get_episodes_link
 from saturno.manage import get_config, manage
 from telegram import Bot
@@ -25,7 +22,9 @@ def last_episodes_downloaded(folder_name, season):
         return []
     _, _, files = tree[0]
     return [
-        int(se_ep.group(1)) for file in files if (se_ep := search(r"_s\d+e(\d+)", file))
+        int(se_ep.group(1))
+        for file in files
+        if (se_ep := search(r"_s\d+e(\d+).+(?<!part)$", file))
     ]
 
 

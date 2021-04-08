@@ -13,6 +13,7 @@ from requests import get
 from saturno.anime import get_download_link, get_episodes_link
 from saturno.manage import get_config, manage
 from telegram import Bot
+from youtube_dl import YoutubeDL
 
 CONFIG = get_config()
 SPINNER = Halo()
@@ -51,18 +52,8 @@ def send_telegram_log(name, season, episode, success=True):
 
 
 def download_video(url, name, filename):
-    popen = Popen(
-        f"{CONFIG.get('youtube-dl-path')} {url} -o '{filename}'",
-        shell=True,
-        stdout=PIPE,
-        stderr=STDOUT,
-    )
-    while True:
-        next_line = popen.stdout.readline()
-        line = next_line.rstrip().decode("utf8")
-        if line == "" and popen.poll() is not None:
-            break
-    return filename
+    with YoutubeDL({"o": filename, "quiet": True, "no_warnings": True}) as ydl:
+        ydl.download([url])
 
 
 def download(action):

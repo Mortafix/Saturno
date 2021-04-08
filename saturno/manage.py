@@ -91,7 +91,7 @@ def pprint_anime(anime_list, index, remove=None):
 
 def pprint_actions(mode=None):
     if mode == "confirm":
-        actions = {"y": "confirm", "n": "back"}
+        actions = {"y": "confirm", "b": "back"}
     elif mode == "add":
         actions = {"ws": "move", "c": "confirm", "b": "back"}
     elif mode == "back":
@@ -268,7 +268,7 @@ def manage():
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))
             print(pprint_actions(mode="confirm"))
-            r_k = direct_input(choices=("y", "n"))
+            r_k = direct_input(choices=("y", "b"))
             if r_k == "y":
                 remove_anime(index)
                 index = 0

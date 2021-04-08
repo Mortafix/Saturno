@@ -52,7 +52,7 @@ def send_telegram_log(name, season, episode, success=True):
 
 
 def download_video(url, name, filename):
-    with YoutubeDL({"o": filename, "quiet": True, "no_warnings": True}) as ydl:
+    with YoutubeDL({"outtmpl": filename, "quiet": True, "no_warnings": True}) as ydl:
         ydl.download([url])
 
 

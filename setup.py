@@ -21,6 +21,7 @@ setuptools.setup(
         "halo",
         "argparse",
         "python-telegram-bot",
+        "youtube-dl",
     ],
     classifiers=[
         "Programming Language :: Python :: 3.8",

@@ -3,7 +3,7 @@ from json import dump, load
 from os import path, walk
 from re import search
 
-from colorifix.colorifix import Background, Color, Style, erase, paint
+from colorifix.colorifix import Background, Color, Style, erase, paint, sample
 from pymortafix.utils import direct_input, strict_input
 from saturno.anime import search_anime
 from telegram import Bot
@@ -57,9 +57,20 @@ def add_telegram_config(bot_token, chat_id):
     save_config(config)
 
 
-def add_youtube_dl(ytd_path):
+def add_colors(colors):
+    json_labels = [
+        "anime-name-menu",
+        "season-menu",
+        "mode-menu",
+        "action-download",
+        "anime-name-download",
+        "episode-download",
+        "setting",
+        "button",
+    ]
+    colors_save = {k: c for k, c in zip(json_labels, colors)}
     config = get_config()
-    config["youtube-dl-path"] = ytd_path
+    config["colors"] = colors_save
     save_config(config)
 
 
@@ -70,11 +81,13 @@ def pprint_row(anime_name, season, mode, index=False, remove=False):
     if index and remove:
         return paint(f"[#] {anime_name} [{mode}]", background=Background.RED)
     if index and not remove:
-        ret_str = paint("[>] ", Color.GREEN) + paint(anime_name, Color.GREEN)
+        ret_str = paint("[>] ", c_anime_menu) + paint(anime_name, c_anime_menu)
     else:
         ret_str = "[ ] " + paint(anime_name)
     return (
-        ret_str + paint(f" (s{season}) ", Color.CYAN) + paint(f"[{mode}]", Color.BLUE)
+        ret_str
+        + paint(f" (s{season}) ", c_season_menu)
+        + paint(f"[{mode}]", c_mode_menu)
     )
 
 
@@ -102,7 +115,7 @@ def pprint_actions(mode=None):
             "r": "restore",
             "p": "path",
             "t": "telegram",
-            "y": "youtube-dl",
+            "c": "colors",
             "b": "back",
         }
     elif mode == "path":
@@ -119,7 +132,7 @@ def pprint_actions(mode=None):
         "-" * sum(len(action) + 5 for action in actions.values())
         + "\n"
         + " ".join(
-            f"[{paint(key,style=Style.BOLD)}]:{paint(action,Color.MAGENTA)}"
+            f"[{paint(key,style=Style.BOLD)}]:{paint(action,c_button)}"
             for key, action in actions.items()
         )
     )
@@ -127,28 +140,27 @@ def pprint_actions(mode=None):
 
 def pprint_query(query_list, selected):
     return "\n".join(
-        paint(f"[>] {name}", Color.GREEN) if selected == i else f"[ ] {name}"
+        paint(f"[>] {name}", c_anime_menu) if selected == i else f"[ ] {name}"
         for i, (name, _) in enumerate(query_list)
     )
 
 
 def pprint_settings():
     config = get_config()
-    labels = ("Current path", "Backup", "Telegram", "Youtube-dl")
-    path_str = paint(config.get("path"), Color.BLUE)
+    labels = ("Current path", "Backup", "Telegram")
+    path_str = paint(config.get("path"), c_settings)
     backup = get_last_backup()
-    backup_str = paint(backup, Color.BLUE)
+    backup_str = paint(backup, c_settings)
     telegram_str = (
         (
-            paint(config.get("telegram-bot-token"), Color.BLUE)
+            paint(config.get("telegram-bot-token"), c_settings)
             + paint(":", style=Style.BOLD)
-            + paint(config.get("telegram-chat-id"), Color.BLUE)
+            + paint(config.get("telegram-chat-id"), c_settings)
         )
         if config.get("telegram-bot-token")
         else ""
     )
-    youtube_dl_str = paint(config.get("youtube-dl-path"), Color.BLUE)
-    values = (path_str, backup_str, telegram_str, youtube_dl_str)
+    values = (path_str, backup_str, telegram_str)
     return "\n".join(
         f"{paint(lab,style=Style.BOLD)}: {val}" for lab, val in zip(labels, values)
     )
@@ -164,11 +176,11 @@ def get_last_backup():
 
 def recap_new_anime(name, url, season, folder, mode):
     return (
-        f"Name: {paint(name,Color.BLUE)}\n"
-        f"Link: {paint(url,Color.BLUE)}\n"
-        f"Stagione {paint(season,Color.BLUE)}\n"
-        f"Folder: {paint(folder,Color.BLUE)}\n"
-        f"Mode: {paint(mode,Color.BLUE)}"
+        f"Name: {paint(name,c_settings)}\n"
+        f"Link: {paint(url,c_settings)}\n"
+        f"Stagione {paint(season,c_settings)}\n"
+        f"Folder: {paint(folder,c_settings)}\n"
+        f"Mode: {paint(mode,c_settings)}"
     )
 
 
@@ -183,9 +195,35 @@ def is_bot_valid(token):
         return False
 
 
-def is_yt_download_valid(ytd_path):
-    return search(r"youtube-dl$", ytd_path) and path.exists(ytd_path)
+def is_color_valid(color):
+    return color.lower() in COLORS.keys()
 
+
+# --- Colors
+
+COLORS = {
+    "blue": Color.BLUE,
+    "red": Color.RED,
+    "green": Color.GREEN,
+    "magenta": Color.MAGENTA,
+    "cyan": Color.CYAN,
+    "yellow": Color.YELLOW,
+    "gray": Color.GRAY,
+    "white": Color.WHITE,
+    "black": Color.BLACK,
+}
+
+
+def string_to_color(color):
+    return COLORS.get(color, Color.WHITE)
+
+
+CONFIG_COLORS = get_config().get("colors")
+c_anime_menu = string_to_color(CONFIG_COLORS.get("anime-name-menu"))
+c_season_menu = string_to_color(CONFIG_COLORS.get("season-menu"))
+c_mode_menu = string_to_color(CONFIG_COLORS.get("mode-menu"))
+c_settings = string_to_color(CONFIG_COLORS.get("setting"))
+c_button = string_to_color(CONFIG_COLORS.get("button"))
 
 # --- Manage
 
@@ -211,8 +249,8 @@ def manage():
             while e_k != "b":
                 print(pprint_settings())
                 print(pprint_actions(mode="settings"))
-                e_k = direct_input(choices=("u", "r", "p", "t", "y", "b"))
-                erase(6)
+                e_k = direct_input(choices=("u", "r", "p", "t", "c", "b"))
+                erase(5)
                 if e_k == "p":
                     base = paint("Path", style=Style.BOLD) + ": "
                     new_path = strict_input(
@@ -252,18 +290,32 @@ def manage():
                         flush=True,
                     )
                     add_telegram_config(telegram_bot_token, telegram_chat_id)
-                elif e_k == "y":
-                    base = paint("Youtube-dl path", style=Style.BOLD) + ": "
-                    youtube_dl_path = strict_input(
-                        base,
-                        wrong_text=paint(
-                            "Wrong path, MUST include 'youtube-dl'! ", Color.RED
+                elif e_k == "c":
+                    print("Color can be:", end="")
+                    sample("color")
+                    erase(2)
+                    color_labels = [
+                        "anime name [menu]",
+                        "season [menu]",
+                        "mode [menu]",
+                        "action [download]",
+                        "anime name [download]",
+                        "episode [download]",
+                        "setting",
+                        "button legend",
+                    ]
+                    colors = list()
+                    for label in color_labels:
+                        base = "Color for " + paint(f"{label}", style=Style.BOLD) + ": "
+                        color_choose = strict_input(
+                            base,
+                            wrong_text=paint("Invalid color! ", Color.RED) + base,
+                            check=is_color_valid,
+                            flush=True,
                         )
-                        + base,
-                        check=is_yt_download_valid,
-                        flush=True,
-                    )
-                    add_youtube_dl(youtube_dl_path)
+                        colors.append(color_choose)
+                    erase()
+                    add_colors(colors)
 
         if anime_list and k == "r":
             print(pprint_anime(anime_list, index, remove=True))

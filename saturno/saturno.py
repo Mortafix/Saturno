@@ -3,17 +3,28 @@ from datetime import datetime
 from os import makedirs, path, walk
 from re import search
 
-from colorifix.colorifix import Color, paint
+from colorifix.colorifix import paint
 from emoji import emojize
 from halo import Halo
 from pymortafix.utils import multisub
 from saturno.anime import get_download_link, get_episodes_link
-from saturno.manage import get_config, manage
+from saturno.manage import get_config, manage, string_to_color
 from telegram import Bot
 from youtube_dl import YoutubeDL
 
 CONFIG = get_config()
 SPINNER = Halo()
+
+
+# --- COLORS
+
+COLORS = CONFIG.get("colors")
+c_action_download = string_to_color(COLORS.get("action-download"))
+c_anime_download = string_to_color(COLORS.get("anime-name-download"))
+c_episode_download = string_to_color(COLORS.get("episode-download"))
+
+
+# --- UTILS
 
 
 def last_episodes_downloaded(folder_name, season):
@@ -55,6 +66,17 @@ def download_video(url, name, filename):
         ydl.download([url])
 
 
+def spinner(func, action, anime, season, episode):
+    func(
+        paint(f"{action} ", c_action_download)
+        + paint(f"{anime} ", c_anime_download)
+        + paint(f"{season}x{episode}", c_episode_download)
+    )
+
+
+# --- DOWNLOADS
+
+
 def download(action):
     anime_list = [list(anime.values()) for anime in CONFIG.get("anime")]
     for name, url, season, folder, mode in anime_list:
@@ -74,29 +96,17 @@ def download(action):
                 filename = path.join(
                     basepath, f"{sanitize_name(name)}_s{int(season):02d}e{ep:02d}.mp4"
                 )
-                SPINNER.start(
-                    f"Downloading {paint(name,Color.BLUE)} "
-                    f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
-                )
+                spinner(SPINNER.start, "Downloading", name, season, ep)
                 try:
                     download_video(episode_link, name, filename)
                 except Exception:
-                    SPINNER.fail(
-                        f"Fail to download {paint(name,Color.BLUE)} "
-                        f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
-                    )
+                    spinner(SPINNER.fail, "Fail to download", name, season, ep)
                     send_telegram_log(name, season, ep, success=False)
                     break
-                SPINNER.succeed(
-                    f"Downloaded {paint(name,Color.BLUE)} "
-                    f"{paint(f'{season}x{ep}',Color.MAGENTA)}"
-                )
+                spinner(SPINNER.succeed, "Downloaded", name, season, ep)
                 send_telegram_log(name, season, ep)
             elif action == "test":
-                SPINNER.info(
-                    f"Found {paint(name, Color.BLUE)} "
-                    + paint(f"{season}x{ep}", Color.MAGENTA)
-                )
+                spinner(SPINNER.info, "Found", name, season, ep)
 
 
 def argparsing():

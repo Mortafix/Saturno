@@ -12,5 +12,6 @@
         "episode-download": "magenta",
         "setting": "blue",
         "button": "magenta"
-    }
+    },
+    "format": "<title_>_s<season>e<episode>"
 }

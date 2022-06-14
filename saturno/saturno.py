@@ -43,6 +43,15 @@ def sanitize_name(name):
     return multisub({":": "", " ": "_"}, name)
 
 
+def build_filename(base, title, season, episode):
+    filename = CONFIG.get("format", "<title_>_s<season>e<episode>")
+    filename = filename.replace("<season>", f"{int(season):02d}")
+    filename = filename.replace("<episode>", f"{int(episode):02d}")
+    filename = filename.replace("<title>", title)
+    filename = filename.replace("<title_>", sanitize_name(title))
+    return path.join(base, f"{filename}.mp4")
+
+
 def send_telegram_log(name, season, episode, success=True):
     config = get_config()
     bot_token = config.get("telegram-bot-token")
@@ -102,9 +111,7 @@ def download(action):
                 basepath = path.join(CONFIG.get("path"), folder, f"Stagione {season}")
                 if not path.exists(basepath):
                     makedirs(basepath)
-                filename = path.join(
-                    basepath, f"{sanitize_name(name)}_s{int(season):02d}e{ep:02d}.mp4"
-                )
+                filename = build_filename(basepath, name, season, ep)
                 spinner(SPINNER.start, "Downloading", name, season, ep)
                 try:
                     download_video(episode_link, name, filename)

@@ -45,6 +45,12 @@ def add_new_path(path):
     save_config(config)
 
 
+def add_format(formating):
+    config = get_config()
+    config["format"] = formating
+    save_config(config)
+
+
 def is_folder_unique(folder_name):
     folders = [anime.get("folder") for anime in get_config().get("anime")]
     return folder_name not in folders
@@ -109,12 +115,11 @@ def pprint_actions(mode=None):
             "u": "backup",
             "r": "restore",
             "p": "path",
+            "f": "format",
             "t": "telegram",
             "c": "colors",
             "b": "back",
         }
-    elif mode == "path":
-        actions = {"e": "edit", "b": "back"}
     else:
         actions = {
             "ws": "move",
@@ -142,7 +147,8 @@ def pprint_query(query_list, selected):
 
 def pprint_settings():
     config = get_config()
-    labels = ("Current path", "Backup", "Telegram")
+    labels = ("Current path", "Format", "Backup", "Telegram")
+    fmt_str = paint(f"[#{c_settings}]{config.get('format')}")
     path_str = paint(f"[#{c_settings}]{config.get('path')}")
     backup = get_last_backup()
     backup_str = paint(f"[#{c_settings}]{backup}")
@@ -154,7 +160,7 @@ def pprint_settings():
         if config.get("telegram-bot-token")
         else ""
     )
-    values = (path_str, backup_str, telegram_str)
+    values = (path_str, fmt_str, backup_str, telegram_str)
     return "\n".join(
         paint(f"[@bold]{lab}:[/@] {val}") for lab, val in zip(labels, values)
     )
@@ -193,6 +199,24 @@ def is_color_valid(color):
     return color.lower() in COLORS
 
 
+FORMATS = [
+    ("<title>", "Title"),
+    ("<title_>", "Title without spaces"),
+    ("<season>", "Season"),
+    ("<episode>", "Episode"),
+]
+
+
+def is_valid_format(formating):
+    if (
+        not search(r"<title_?>", formating)
+        or not search(r"<season>", formating)
+        or not search(r"<episode>", formating)
+    ):
+        return False
+    return True
+
+
 # ---- Colors
 
 COLORS = ["blue", "red", "green", "magenta", "cyan", "yellow", "gray", "white", "black"]
@@ -227,8 +251,8 @@ def manage():
             while e_k != "b":
                 print(pprint_settings())
                 print(pprint_actions(mode="settings"))
-                e_k = direct_input(choices=("u", "r", "p", "t", "c", "b"))
-                erase(5)
+                e_k = direct_input(choices=("u", "r", "p", "t", "c", "b", "f"))
+                erase(6)
                 if e_k == "p":
                     base = paint("[@bold]Path[/@]: ")
                     new_path = strict_input(
@@ -238,7 +262,18 @@ def manage():
                         flush=True,
                     )
                     add_new_path(new_path)
-                    e_k = ""
+                elif e_k == "f":
+                    print("> Legend:")
+                    print("\n".join(f" {keyw}: {descr}" for keyw, descr in FORMATS))
+                    base = paint("[@bold]Format[/@]: ")
+                    new_format = strict_input(
+                        base,
+                        wrong_text=paint(f"[#red]Wrong format![/] {base}"),
+                        check=is_valid_format,
+                        flush=True,
+                    )
+                    erase(5)
+                    add_format(new_format)
                 elif e_k == "r":
                     backup_filename = get_last_backup()
                     if backup_filename:

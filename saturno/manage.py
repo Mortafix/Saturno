@@ -175,7 +175,7 @@ def get_last_backup():
 
 
 def recap_new_anime(name, url, season, folder, mode):
-    return (
+    return paint(
         f"Name: [#{c_settings}]{name}[/]\n"
         f"Link: [#{c_settings}]{url}[/]\n"
         f"Stagione [#{c_settings}]{season}[/]\n"

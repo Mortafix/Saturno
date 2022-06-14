@@ -3,13 +3,13 @@ from json import dump, load
 from os import path, walk
 from re import search
 
-from colorifix.colorifix import Background, Color, Style, erase, paint, sample
+from colorifix.colorifix import erase, paint, ppaint, sample
 from pymortafix.utils import direct_input, strict_input
 from saturno.anime import search_anime
 from telegram import Bot
 from telegram.error import InvalidToken
 
-# --- Config file
+# ---- Config file
 
 
 def get_config():
@@ -74,21 +74,16 @@ def add_colors(colors):
     save_config(config)
 
 
-# --- Pretty Print
+# ---- Pretty Print
 
 
 def pprint_row(anime_name, season, mode, index=False, remove=False):
     if index and remove:
-        return paint(f"[#] {anime_name} [{mode}]", background=Background.RED)
+        return paint(f"[!red][#] {anime_name} [{mode}]")
+    ret_str = f"[ ] {anime_name}"
     if index and not remove:
-        ret_str = paint("[>] ", c_anime_menu) + paint(anime_name, c_anime_menu)
-    else:
-        ret_str = "[ ] " + paint(anime_name)
-    return (
-        ret_str
-        + paint(f" (s{season}) ", c_season_menu)
-        + paint(f"[{mode}]", c_mode_menu)
-    )
+        ret_str = paint(f"[#{c_anime_menu}][>] {anime_name}")
+    return ret_str + paint(f" [#{c_season_menu}](s{season}) [#{c_mode_menu}][{mode}]")
 
 
 def pprint_anime(anime_list, index, remove=None):
@@ -132,7 +127,7 @@ def pprint_actions(mode=None):
         "-" * sum(len(action) + 5 for action in actions.values())
         + "\n"
         + " ".join(
-            f"[{paint(key,style=Style.BOLD)}]:{paint(action,c_button)}"
+            paint(f"[@bold][{key}]:[/@ #{c_button}]{action}")
             for key, action in actions.items()
         )
     )
@@ -140,7 +135,7 @@ def pprint_actions(mode=None):
 
 def pprint_query(query_list, selected):
     return "\n".join(
-        paint(f"[>] {name}", c_anime_menu) if selected == i else f"[ ] {name}"
+        paint(f"[#{c_anime_menu}][>] {name}") if selected == i else f"[ ] {name}"
         for i, (name, _) in enumerate(query_list)
     )
 
@@ -148,21 +143,20 @@ def pprint_query(query_list, selected):
 def pprint_settings():
     config = get_config()
     labels = ("Current path", "Backup", "Telegram")
-    path_str = paint(config.get("path"), c_settings)
+    path_str = paint(f"[#{c_settings}]{config.get('path')}")
     backup = get_last_backup()
-    backup_str = paint(backup, c_settings)
+    backup_str = paint(f"[#{c_settings}]{backup}")
     telegram_str = (
-        (
-            paint(config.get("telegram-bot-token"), c_settings)
-            + paint(":", style=Style.BOLD)
-            + paint(config.get("telegram-chat-id"), c_settings)
+        paint(
+            f"[#{c_settings}]{config.get('telegram-bot-token')}[/# @bold]:"
+            f"[/@ #{c_settings}]{config.get('telegram-chat-id')}"
         )
         if config.get("telegram-bot-token")
         else ""
     )
     values = (path_str, backup_str, telegram_str)
     return "\n".join(
-        f"{paint(lab,style=Style.BOLD)}: {val}" for lab, val in zip(labels, values)
+        paint(f"[@bold]{lab}:[/@] {val}") for lab, val in zip(labels, values)
     )
 
 
@@ -176,15 +170,15 @@ def get_last_backup():
 
 def recap_new_anime(name, url, season, folder, mode):
     return (
-        f"Name: {paint(name,c_settings)}\n"
-        f"Link: {paint(url,c_settings)}\n"
-        f"Stagione {paint(season,c_settings)}\n"
-        f"Folder: {paint(folder,c_settings)}\n"
-        f"Mode: {paint(mode,c_settings)}"
+        f"Name: [#{c_settings}]{name}[/]\n"
+        f"Link: [#{c_settings}]{url}[/]\n"
+        f"Stagione [#{c_settings}]{season}[/]\n"
+        f"Folder: [#{c_settings}]{folder}[/]\n"
+        f"Mode: [#{c_settings}]{mode}[/]"
     )
 
 
-# --- Input
+# ---- Input
 
 
 def is_bot_valid(token):
@@ -196,36 +190,20 @@ def is_bot_valid(token):
 
 
 def is_color_valid(color):
-    return color.lower() in COLORS.keys()
+    return color.lower() in COLORS
 
 
-# --- Colors
+# ---- Colors
 
-COLORS = {
-    "blue": Color.BLUE,
-    "red": Color.RED,
-    "green": Color.GREEN,
-    "magenta": Color.MAGENTA,
-    "cyan": Color.CYAN,
-    "yellow": Color.YELLOW,
-    "gray": Color.GRAY,
-    "white": Color.WHITE,
-    "black": Color.BLACK,
-}
-
-
-def string_to_color(color):
-    return COLORS.get(color, Color.WHITE)
-
-
+COLORS = ["blue", "red", "green", "magenta", "cyan", "yellow", "gray", "white", "black"]
 CONFIG_COLORS = get_config().get("colors")
-c_anime_menu = string_to_color(CONFIG_COLORS.get("anime-name-menu"))
-c_season_menu = string_to_color(CONFIG_COLORS.get("season-menu"))
-c_mode_menu = string_to_color(CONFIG_COLORS.get("mode-menu"))
-c_settings = string_to_color(CONFIG_COLORS.get("setting"))
-c_button = string_to_color(CONFIG_COLORS.get("button"))
+c_anime_menu = CONFIG_COLORS.get("anime-name-menu")
+c_season_menu = CONFIG_COLORS.get("season-menu")
+c_mode_menu = CONFIG_COLORS.get("mode-menu")
+c_settings = CONFIG_COLORS.get("setting")
+c_button = CONFIG_COLORS.get("button")
 
-# --- Manage
+# ---- Manage
 
 
 def manage():
@@ -252,10 +230,10 @@ def manage():
                 e_k = direct_input(choices=("u", "r", "p", "t", "c", "b"))
                 erase(5)
                 if e_k == "p":
-                    base = paint("Path", style=Style.BOLD) + ": "
+                    base = paint("[@bold]Path[/@]: ")
                     new_path = strict_input(
                         base,
-                        wrong_text=paint("Wrong path! ", Color.RED) + base,
+                        wrong_text=paint(f"[#red]Wrong path![/] {base}"),
                         check=path.exists,
                         flush=True,
                     )
@@ -275,25 +253,24 @@ def manage():
                         indent=4,
                     )
                 elif e_k == "t":
-                    base = paint("Telegram bot token", style=Style.BOLD) + ": "
+                    base = paint("[@bold]Telegram bot token[/@]: ")
                     telegram_bot_token = strict_input(
                         base,
-                        wrong_text=paint("Invalid token! ", Color.RED) + base,
+                        wrong_text=paint(f"[#red]Invalid token![/] {base}"),
                         check=is_bot_valid,
                         flush=True,
                     )
-                    base = paint("Telegram chat ID", style=Style.BOLD) + ": "
+                    base = paint("[@bold]Telegram chat ID[/@]: ")
                     telegram_chat_id = strict_input(
                         base,
-                        wrong_text=paint("Invalid chat ID! ", Color.RED) + base,
+                        wrong_text=paint(f"[#red]Invalid chat ID![/] {base}"),
                         regex=r"\-?\d+$",
                         flush=True,
                     )
                     add_telegram_config(telegram_bot_token, telegram_chat_id)
                 elif e_k == "c":
-                    print("Color can be:", end="")
-                    sample("color")
-                    erase(2)
+                    print("Color can be:")
+                    sample()
                     color_labels = [
                         "anime name [menu]",
                         "season [menu]",
@@ -306,15 +283,15 @@ def manage():
                     ]
                     colors = list()
                     for label in color_labels:
-                        base = "Color for " + paint(f"{label}", style=Style.BOLD) + ": "
+                        base = paint(f"Color for [@bold]{label}[/@]: ")
                         color_choose = strict_input(
                             base,
-                            wrong_text=paint("Invalid color! ", Color.RED) + base,
+                            wrong_text=paint(f"[#red]Invalid color![/] {base}"),
                             check=is_color_valid,
                             flush=True,
                         )
                         colors.append(color_choose)
-                    erase()
+                    erase(5)
                     add_colors(colors)
 
         if anime_list and k == "r":
@@ -329,12 +306,11 @@ def manage():
         if k == "a":
             q_index = 0
             q_k = "start"
-            # anime search
-            query = input(paint("Anime name", style=Style.BOLD) + ": ")
+            query = input(paint("[@bold]Anime name[/@]: "))
             erase()
             query_list = search_anime(query)
             if not query_list:
-                print(f"No anime found with {paint(query,Color.BLUE)}!")
+                ppaint(f"No anime found with [#blue]{query}[/]")
                 print(pprint_actions(mode="back"))
                 q_k = direct_input(choices=("b",))
                 erase(3)
@@ -348,26 +324,20 @@ def manage():
                         q_index -= 1
                     if q_k == "s" and q_index < len(query_list) - 1:
                         q_index += 1
-            # new anime
             if q_k == "c":
-                base = paint("Season", style=Style.BOLD) + ": "
+                base = paint("[@bold]Season[/@]: ")
                 season = strict_input(
                     base,
-                    f"{paint('This is not a season!',Color.RED)} {base}",
+                    wrong_text=paint(f"[#red]This is not a season![/] {base}"),
                     regex=r"\d{1,2}$",
                     flush=True,
                 )
-                base = paint("Folder name", style=Style.BOLD) + ": "
-                name = strict_input(
-                    base,
-                    f"{paint('Folder name must be unique!', Color.RED)} {base}",
-                    check=is_folder_unique,
-                    flush=True,
-                )
-                base = paint("Mode [full|new]", style=Style.BOLD) + ": "
+                base = paint("[@bold]Folder name[/@]: ")
+                name = strict_input(base, flush=True)
+                base = paint("[@bold]Mode [full|new][/@]: ")
                 mode = strict_input(
                     base,
-                    f"{paint('Mode must be full or new!', Color.RED)} {base}",
+                    wrong_text=paint(f"[#red]Mode must be full or new![/] {base}"),
                     choices=("full", "new"),
                     flush=True,
                 )

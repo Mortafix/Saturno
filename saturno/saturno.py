@@ -8,7 +8,7 @@ from emoji import emojize
 from halo import Halo
 from pymortafix.utils import multisub
 from saturno.anime import get_download_link, get_episodes_link
-from saturno.manage import get_config, manage, string_to_color
+from saturno.manage import get_config, manage
 from telegram import Bot
 from youtube_dl import YoutubeDL
 
@@ -19,9 +19,9 @@ SPINNER = Halo()
 # --- COLORS
 
 COLORS = CONFIG.get("colors")
-c_action_download = string_to_color(COLORS.get("action-download"))
-c_anime_download = string_to_color(COLORS.get("anime-name-download"))
-c_episode_download = string_to_color(COLORS.get("episode-download"))
+c_action_download = COLORS.get("action-download")
+c_anime_download = COLORS.get("anime-name-download")
+c_episode_download = COLORS.get("episode-download")
 
 
 # --- UTILS
@@ -62,15 +62,24 @@ def send_telegram_log(name, season, episode, success=True):
 
 
 def download_video(url, name, filename):
-    with YoutubeDL({"outtmpl": filename, "quiet": True, "no_warnings": True}) as ydl:
+    with YoutubeDL(
+        {
+            "outtmpl": filename,
+            "quiet": True,
+            "no_warnings": True,
+            "nocheckcertificate": True,
+        }
+    ) as ydl:
         ydl.download([url])
 
 
 def spinner(func, action, anime, season, episode):
     func(
-        paint(f"{action} ", c_action_download)
-        + paint(f"{anime} ", c_anime_download)
-        + paint(f"{season}x{episode}", c_episode_download)
+        paint(
+            f"[#{c_action_download}]{action} "
+            f"[#{c_anime_download}]{anime} "
+            f"[#{c_episode_download}]{season}x{episode}"
+        )
     )
 
 

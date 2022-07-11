@@ -3,7 +3,7 @@ from re import search
 from bs4 import BeautifulSoup as bs
 from requests import get
 
-SEARCH_URL = "https://www.animesaturn.it/animelist?search="
+SEARCH_URL = "https://www.animesaturn.cc/animelist?search="
 
 
 def search_anime(query):

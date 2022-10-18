@@ -1,13 +1,13 @@
+from os import path
 from re import search
 
 from bs4 import BeautifulSoup as bs
 from requests import get
 
-SEARCH_URL = "https://www.animesaturn.cc/animelist?search="
 
-
-def search_anime(query):
-    soup = bs(get(f"{SEARCH_URL}{query}").text, "html.parser")
+def search_anime(base_url, query):
+    search_url = path.join(base_url, "animelist?search=")
+    soup = bs(get(f"{search_url}{query}").text, "html.parser")
     return [
         (group.find("h3").text[1:-1], group.find("a").get("href"))
         for group in soup.findAll("ul", {"class": "list-group"})
@@ -16,6 +16,8 @@ def search_anime(query):
 
 def get_episodes_link(anime_link):
     soup = bs(get(anime_link).text, "html.parser")
+    if not soup.find("div", {"class": "tab-content"}):
+        return None, None
     a_refs = soup.find("div", {"class": "tab-content"}).findAll("a")
     links = [link.get("href") for link in a_refs]
     episodes = [int(search(r"ep-(\d+)", link.get("href")).group(1)) for link in a_refs]

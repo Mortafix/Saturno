@@ -5,6 +5,7 @@ from re import search
 
 from colorifix.colorifix import erase, paint, ppaint, sample
 from pymortafix.utils import direct_input, strict_input
+from requests import get
 from saturno.anime import search_anime
 from telegram import Bot
 from telegram.error import InvalidToken
@@ -42,6 +43,12 @@ def add_anime(name, link, season, folder, mode):
 def add_new_path(path):
     config = get_config()
     config["path"] = path
+    save_config(config)
+
+
+def add_new_site(site):
+    config = get_config()
+    config["site"] = site
     save_config(config)
 
 
@@ -115,6 +122,7 @@ def pprint_actions(mode=None):
             "u": "backup",
             "r": "restore",
             "p": "path",
+            "s": "site",
             "f": "format",
             "t": "telegram",
             "c": "colors",
@@ -147,9 +155,10 @@ def pprint_query(query_list, selected):
 
 def pprint_settings():
     config = get_config()
-    labels = ("Current path", "Format", "Backup", "Telegram")
+    labels = ("Current path", "Site", "Format", "Backup", "Telegram")
     fmt_str = paint(f"[#{c_settings}]{config.get('format')}")
     path_str = paint(f"[#{c_settings}]{config.get('path')}")
+    site_str = paint(f"[#{c_settings}]{config.get('site')}")
     backup = get_last_backup()
     backup_str = paint(f"[#{c_settings}]{backup}")
     telegram_str = (
@@ -160,7 +169,7 @@ def pprint_settings():
         if config.get("telegram-bot-token")
         else ""
     )
-    values = (path_str, fmt_str, backup_str, telegram_str)
+    values = (path_str, site_str, fmt_str, backup_str, telegram_str)
     return "\n".join(
         paint(f"[@bold]{lab}:[/@] {val}") for lab, val in zip(labels, values)
     )
@@ -185,6 +194,13 @@ def recap_new_anime(name, url, season, folder, mode):
 
 
 # ---- Input
+
+
+def is_valid_site(site):
+    try:
+        return get(site).status_code == 200
+    except Exception:
+        return False
 
 
 def is_bot_valid(token):
@@ -251,8 +267,8 @@ def manage():
             while e_k != "b":
                 print(pprint_settings())
                 print(pprint_actions(mode="settings"))
-                e_k = direct_input(choices=("u", "r", "p", "t", "c", "b", "f"))
-                erase(6)
+                e_k = direct_input(choices=("u", "r", "p", "t", "c", "b", "f", "s"))
+                erase(7)
                 if e_k == "p":
                     base = paint("[@bold]Path[/@]: ")
                     new_path = strict_input(
@@ -262,6 +278,15 @@ def manage():
                         flush=True,
                     )
                     add_new_path(new_path)
+                if e_k == "s":
+                    base = paint("[@bold]Site[/@]: ")
+                    new_site = strict_input(
+                        base,
+                        wrong_text=paint(f"[#red]Wrong site![/] {base}"),
+                        check=is_valid_site,
+                        flush=True,
+                    )
+                    add_new_site(new_site)
                 elif e_k == "f":
                     print("> Legend:")
                     print("\n".join(f" {keyw}: {descr}" for keyw, descr in FORMATS))
@@ -343,7 +368,7 @@ def manage():
             q_k = "start"
             query = input(paint("[@bold]Anime name[/@]: "))
             erase()
-            query_list = search_anime(query)
+            query_list = search_anime(get_config().get("site"), query)
             if not query_list:
                 ppaint(f"No anime found with [#blue]{query}[/]")
                 print(pprint_actions(mode="back"))

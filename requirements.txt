@@ -5,7 +5,7 @@ cachetools==4.2.2
 certifi==2022.5.18.1
 charset-normalizer==2.0.12
 colorama==0.4.4
-colorifix==2.0.3
+colorifix==2.0.4
 emoji==1.7.0
 halo==0.0.31
 idna==3.3

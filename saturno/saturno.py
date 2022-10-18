@@ -3,7 +3,7 @@ from datetime import datetime
 from os import makedirs, path, walk
 from re import search
 
-from colorifix.colorifix import paint
+from colorifix.colorifix import paint, ppaint
 from emoji import emojize
 from halo import Halo
 from pymortafix.utils import multisub
@@ -100,6 +100,9 @@ def download(action):
     for name, url, season, folder, mode in anime_list:
         downloaded_eps = last_episodes_downloaded(folder, season)
         links, eps_available = get_episodes_link(url)
+        if links is None:
+            ppaint(f"[@bold][{name}][#red /@] Link invalid, try to re-add it!")
+            continue
         if mode == "full":
             eps_to_download = [ep for ep in eps_available if ep not in downloaded_eps]
         else:

@@ -1,9 +1,11 @@
 {
     "anime": [],
     "path": ".",
+    "site": "https://animesaturn.in",
     "telegram-bot-token": null,
     "telegram-chat-id": null,
-    "colors": {
+    "colors":
+    {
         "anime-name-menu": "green",
         "season-menu": "cyan",
         "mode-menu": "blue",

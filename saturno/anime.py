@@ -1,4 +1,3 @@
-from os import path
 from re import search
 
 from bs4 import BeautifulSoup as bs
@@ -6,8 +5,7 @@ from requests import get
 
 
 def search_anime(base_url, query):
-    search_url = path.join(base_url, "animelist?search=")
-    soup = bs(get(f"{search_url}{query}").text, "html.parser")
+    soup = bs(get(f"{base_url}/animelist?search={query}").text, "html.parser")
     return [
         (group.find("h3").text[1:-1], group.find("a").get("href"))
         for group in soup.findAll("ul", {"class": "list-group"})
